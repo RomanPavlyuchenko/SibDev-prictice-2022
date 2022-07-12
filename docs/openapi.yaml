@@ -40,9 +40,21 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/TokenObtain200'
-        '400':
-          $ref: '#/components/responses/TokenObtain400'
+        '401':
+          $ref: '#/components/responses/TokenObtain401'
 
+  '/auth/api-token-refresh':
+    post:
+      tags:
+        - auth
+      summary: "Refresh tokens pair"
+      requestBody:
+        $ref: '#/components/requestBodies/TokenRefreshRequestBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenObtain200'
+        '401':
+          $ref: '#/components/responses/TokenRefresh401'
 
   '/users/me':
     get:
@@ -486,12 +498,15 @@ components:
           schema:
             type: object
             properties:
-              token:
+              refresh:
+                type: string
+                description: "refresh token"
+              access:
                 type: string
                 description: "access token"
 
-    TokenObtain400:
-      description: "Bad request"
+    TokenObtain401:
+      description: "Unauthorized"
       content:
         application/json:
           schema:
@@ -499,7 +514,22 @@ components:
             properties:
               detail:
                 type: string
-                example: "No active account found with the given credentials"
+              code:
+                type: string
+                example: "token_not_valid"
+              messages:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    token_class:
+                      type: string
+                      example: "AccessToken"
+                    token_type:
+                      type: string
+                      example: "access"
+                    message:
+                      type: string
 
     TokenRefresh400:
       description: "Bad request"
@@ -511,6 +541,20 @@ components:
               detail:
                 type: string
                 example: "Token is invalid or expired"
+              code:
+                type: string
+                example: "token_not_valid"
+
+    TokenRefresh401:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "The token is invalid or expired"
               code:
                 type: string
                 example: "token_not_valid"

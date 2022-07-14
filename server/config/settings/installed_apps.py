@@ -8,6 +8,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
 ]
 
 LOCAL_APPS = [

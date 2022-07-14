@@ -12,23 +12,31 @@ class TransactionRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ('id', 'category', 'transaction_date', 'amount')
+        fields = ('id', 'category', 'transaction_type', 'transaction_date', 'amount')
 
 
 class TransactionCreateSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=TransactionCategory.objects.all())
+    # category = serializers.PrimaryKeyRelatedField(queryset=TransactionCategory.objects.all())
 
     class Meta:
         model = Transaction
-        fields = ('id', 'category', 'transaction_date', 'amount')
+        fields = ('id', 'transaction_type', 'category', 'transaction_date', 'amount')
 
-    def validate_category(self, category: TransactionCategory) -> TransactionCategory:
-        user = self.context['request'].user
+    # def validate_category(self, category: TransactionCategory) -> TransactionCategory:
+    #     user = self.context['request'].user
+    #
+    #     if category not in user.categories.all():
+    #         raise serializers.ValidationError(TransactionErrors.NOT_USERS_CATEGORY)
+    #     else:
+    #         return category
 
-        if category not in user.categories.all():
-            raise serializers.ValidationError(TransactionErrors.NOT_USERS_CATEGORY)
-        else:
-            return category
+    def validate(self, attrs: dict) -> dict:
+        if attrs['transaction_type'] == 'income':
+            attrs['category'] = None
+        elif not attrs.get('category', None):
+            raise serializers.ValidationError(TransactionErrors.FIELD_IS_REQUIRED)
+
+        return attrs
 
     def create(self, validated_data: dict) -> Transaction:
         validated_data['user'] = self.context['request'].user

@@ -44,4 +44,7 @@ class Transaction(models.Model):
         verbose_name_plural = 'Операции'
 
     def __str__(self) -> str:
-        return f'{self.category} {self.amount}'
+        if self.category:
+            return f'{self.category} {self.amount}'
+        else:
+            return f'income {self.amount}'

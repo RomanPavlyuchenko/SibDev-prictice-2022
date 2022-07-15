@@ -447,6 +447,9 @@ components:
               category:
                 type: number
                 description: category id
+              transaction_type:
+                type: string
+                enum: ["income", "expense"]
               transaction_date:
                 type: string
                 format: date
@@ -610,11 +613,11 @@ components:
                 items:
                   type: string
                   example: "Убедитесь, что это значение больше либо равно 0.01."
-              category:
+              non_field_errors:
                 type: array
                 items:
                   type: string
-                  example: "У пользователя нет такой категории"
+                  example: "Поле категория обязательно для транзакции типа расход"
 
 
     TransactionGlobal200:

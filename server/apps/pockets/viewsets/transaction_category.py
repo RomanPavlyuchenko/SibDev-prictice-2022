@@ -14,7 +14,9 @@ from ..serializers import (
 )
 
 
-class TransactionCategoryViewSet(viewsets.ModelViewSet):
+class TransactionCategoryViewSet(viewsets.ReadOnlyModelViewSet,
+                                 viewsets.mixins.CreateModelMixin):
+
     permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self) -> Type[serializers.ModelSerializer]:
@@ -28,11 +30,9 @@ class TransactionCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self) -> QuerySet:
         queryset = TransactionCategory.objects.filter(
             user=self.request.user,
-        ).order_by(
-            '-id',
-        )
+        ).order_by('-id')
 
-        if self.action == 'transactions_by_categories':
+        if self.action == 'transactions_by_categories' or self.action == 'list':
             queryset = queryset.annotate_with_transaction_sums()
 
         return queryset

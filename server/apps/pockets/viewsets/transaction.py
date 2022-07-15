@@ -7,9 +7,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Transaction
 from ..models.querysets import TransactionQuerySet
+from .filterset import TransactionFilter
 from ..serializers import (
     TransactionCreateSerializer,
     TransactionRetrieveSerializer,
@@ -21,6 +23,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.LimitOffsetPagination
     pagination_class.default_limit = 20
     permission_classes = (IsAuthenticated,)
+    filter_backends = [DjangoFilterBackend, ]
+    filterset_class = TransactionFilter
 
     def get_serializer_class(self) -> Type[serializers.ModelSerializer]:
         if self.action == 'total':

@@ -14,4 +14,4 @@ class TransactionCategoryQuerySet(QuerySet):
                 0,
                 output_field=DecimalField(),
             ),
-        )
+        ).order_by('-transactions_sum')

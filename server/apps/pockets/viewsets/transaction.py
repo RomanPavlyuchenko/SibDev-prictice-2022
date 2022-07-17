@@ -16,6 +16,7 @@ from ..serializers import (
     TransactionCreateSerializer,
     TransactionRetrieveSerializer,
     TransactionGlobalSerializer,
+    TransactionBalanceSerializer,
 )
 
 
@@ -29,6 +30,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self) -> Type[serializers.ModelSerializer]:
         if self.action == 'total':
             serializer_class = TransactionGlobalSerializer
+        elif self.action == 'balance':
+            serializer_class = TransactionBalanceSerializer
         elif self.action in {'create', 'update', 'partial_update'}:
             serializer_class = TransactionCreateSerializer
         else:
@@ -50,6 +53,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
             current_month = timezone.now().month
             queryset = self.get_queryset().filter(transaction_date__month=current_month)
             obj = self.filter_queryset(queryset).aggregate_totals()
+        elif self.action == 'balance':
+            obj = self.filter_queryset(self.get_queryset()).aggregate_balance()
         else:
             obj = super().get_object()
 
@@ -57,4 +62,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     @action(methods=('GET',), detail=False, url_path='global')
     def total(self, request: Request, *args, **kwargs) -> Response:
+        return super().retrieve(request, *args, **kwargs)
+
+    @action(methods=('GET',), detail=False, url_path='balance')
+    def balance(self, request: Request, *args, **kwargs) -> Response:
         return super().retrieve(request, *args, **kwargs)

@@ -10,7 +10,7 @@ class TransactionCategoryQuerySet(QuerySet):
 
         return self.annotate(
             transactions_sum=Coalesce(
-                Sum('transactions__amount'),
+                Sum('transactions__amount', distinct=True),
                 0,
                 output_field=DecimalField(),
             ),

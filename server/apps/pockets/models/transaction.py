@@ -47,4 +47,4 @@ class Transaction(models.Model):
         if self.category:
             return f'{self.category} {self.amount}'
         else:
-            return f'income {self.amount}'
+            return f'{TransactionTypes.INCOME} {self.amount}'

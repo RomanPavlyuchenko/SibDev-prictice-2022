@@ -13,6 +13,7 @@ from ..models import TransactionCategory
 from ..serializers import (
     TransactionCategorySerializer,
     TransactionCategoryTransactionSumSerializer,
+    TransactionCategoryTransactionSumListSerializer,
 )
 
 
@@ -26,6 +27,8 @@ class TransactionCategoryViewSet(viewsets.ReadOnlyModelViewSet,
     def get_serializer_class(self) -> Type[serializers.ModelSerializer]:
         if self.action == 'transactions_by_categories':
             serializer_class = TransactionCategoryTransactionSumSerializer
+        elif self.action == 'top_categories':
+            serializer_class = TransactionCategoryTransactionSumListSerializer
         else:
             serializer_class = TransactionCategorySerializer
 
@@ -36,11 +39,25 @@ class TransactionCategoryViewSet(viewsets.ReadOnlyModelViewSet,
             user=self.request.user,
         ).order_by('-id')
 
-        if self.action == 'transactions_by_categories' or self.action == 'list':
+        if self.action == 'transactions_by_categories' \
+                or self.action == 'list' \
+                or self.action == 'top_categories':
             queryset = queryset.annotate_with_transaction_sums()
 
         return queryset
 
+    def get_object(self):
+        if self.action == 'top_categories':
+            obj = self.filter_queryset(self.get_queryset()).get_list_top_categories()
+        else:
+            obj = super().get_object()
+
+        return obj
+
     @action(methods=('GET',), detail=False, url_path='transactions-by-categories')
     def transactions_by_categories(self, request: Request, *args, **kwargs) -> Response:
         return super().list(request, *args, **kwargs)
+
+    @action(methods=('GET',), detail=False, url_path='top_categories_by_transactions')
+    def top_categories(self, request: Request, *args, **kwargs) -> Response:
+        return super().retrieve(request, *args, **kwargs)

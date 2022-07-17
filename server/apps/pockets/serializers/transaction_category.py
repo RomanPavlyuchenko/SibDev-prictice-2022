@@ -37,3 +37,12 @@ class TransactionCategoryTransactionSumSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionCategory
         fields = ('id', 'name', 'transactions_sum')
+
+
+class TransactionCategoryTransactionsSerializer(serializers.Serializer):
+    category_name = serializers.CharField()
+    transactions_sum = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class TransactionCategoryTransactionSumListSerializer(serializers.ListSerializer):
+    child = TransactionCategoryTransactionsSerializer()

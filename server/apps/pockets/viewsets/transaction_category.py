@@ -1,12 +1,14 @@
 from typing import Type
 
 from django.db.models import QuerySet
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, serializers
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from .filterset import TransactionCategoryFilter
 from ..models import TransactionCategory
 from ..serializers import (
     TransactionCategorySerializer,
@@ -18,6 +20,8 @@ class TransactionCategoryViewSet(viewsets.ReadOnlyModelViewSet,
                                  viewsets.mixins.CreateModelMixin):
 
     permission_classes = (IsAuthenticated,)
+    filter_backends = [DjangoFilterBackend, ]
+    filterset_class = TransactionCategoryFilter
 
     def get_serializer_class(self) -> Type[serializers.ModelSerializer]:
         if self.action == 'transactions_by_categories':

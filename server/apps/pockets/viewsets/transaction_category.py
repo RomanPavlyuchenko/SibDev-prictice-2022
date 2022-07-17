@@ -58,6 +58,6 @@ class TransactionCategoryViewSet(viewsets.ReadOnlyModelViewSet,
     def transactions_by_categories(self, request: Request, *args, **kwargs) -> Response:
         return super().list(request, *args, **kwargs)
 
-    @action(methods=('GET',), detail=False, url_path='top_categories_by_transactions')
+    @action(methods=('GET',), detail=False, url_path='top-categories-by-transactions')
     def top_categories(self, request: Request, *args, **kwargs) -> Response:
         return super().retrieve(request, *args, **kwargs)

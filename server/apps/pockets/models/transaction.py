@@ -25,6 +25,7 @@ class Transaction(models.Model):
     transaction_type = models.CharField(
         max_length=7,
         choices=TransactionTypes.CHOICES,
+        default=TransactionTypes.EXPENSE,
         verbose_name='Тип категории',
     )
     transaction_date = models.DateField(

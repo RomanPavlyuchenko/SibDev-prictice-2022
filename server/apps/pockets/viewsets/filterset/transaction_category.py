@@ -6,8 +6,15 @@ from ...models.transaction_category import TransactionCategory
 
 class TransactionCategoryFilter(django_filters.FilterSet):
 
-    transaction_month = django_filters.DateFilter(field_name='transactions__transaction_date',
-                                                  method='month_filter')
+    transaction_year = django_filters.NumberFilter(
+        field_name='transactions__transaction_date',
+        lookup_expr='year'
+    )
+    transaction_month = django_filters.NumberFilter(
+        field_name='transactions__transaction_date',
+        lookup_expr='month'
+    )
+
     order = django_filters.OrderingFilter(
         fields=(
             ('transactions_sum', 'amount'),
@@ -17,17 +24,6 @@ class TransactionCategoryFilter(django_filters.FilterSet):
         }
     )
 
-    def month_filter(self, queryset, name, value):
-        return queryset.filter(
-            transactions__transaction_type=TransactionTypes.EXPENSE,
-            **{
-                "%s__year" % name: value.year,
-                "%s__month" % name: value.month
-            },
-        )
-
     class Meta:
         model = TransactionCategory
-        fields = [
-            'transactions__transaction_date',
-        ]
+        fields = ('transactions__transaction_date',)

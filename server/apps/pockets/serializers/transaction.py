@@ -22,10 +22,14 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
         fields = ('id', 'transaction_type', 'category', 'transaction_date', 'amount')
 
     def validate(self, attrs: dict) -> dict:
-        if attrs['transaction_type'] == 'income':
-            attrs['category'] = None
-        elif not attrs.get('category', None):
+        user = self.context['request'].user
+
+        if attrs['transaction_type'] == 'income' and attrs['category'] is not None:
+            raise serializers.ValidationError(TransactionErrors.INCOME_TRANSACTION_TYPE)
+        if not attrs.get('category', None):
             raise serializers.ValidationError(TransactionErrors.FIELD_IS_REQUIRED)
+        if attrs['category'] not in user.categories.all():
+            raise serializers.ValidationError(TransactionErrors.NOT_USERS_CATEGORY)
 
         return attrs
 

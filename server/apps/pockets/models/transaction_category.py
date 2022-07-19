@@ -18,6 +18,7 @@ class TransactionCategory(models.Model):
     objects = TransactionCategoryManager()
 
     class Meta:
+        unique_together = ('user', 'name',)
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 

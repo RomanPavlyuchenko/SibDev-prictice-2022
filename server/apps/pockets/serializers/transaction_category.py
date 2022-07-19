@@ -12,13 +12,11 @@ class TransactionCategorySerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict) -> dict:
         user = self.context['request'].user
         name = attrs['name']
-        # category_type = attrs['category_type']
         excludes = {'id': self.instance.id} if self.instance else {}
 
         if TransactionCategory.objects.filter(
             user=user,
             name=name,
-            # category_type=category_type,
         ).exclude(
             **excludes,
         ).exists():
@@ -40,9 +38,5 @@ class TransactionCategoryTransactionSumSerializer(serializers.ModelSerializer):
 
 
 class TransactionCategoryTransactionsSerializer(serializers.Serializer):
-    category_name = serializers.CharField()
+    name = serializers.CharField()
     transactions_sum = serializers.DecimalField(max_digits=10, decimal_places=2)
-
-
-class TransactionCategoryTransactionSumListSerializer(serializers.ListSerializer):
-    child = TransactionCategoryTransactionsSerializer()

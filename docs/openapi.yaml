@@ -88,7 +88,8 @@ paths:
           schema:
             type: number
           required: false
-        - $ref: '#/components/parameters/DateParam'
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
         - $ref: '#/components/parameters/OrderParam'
 
       responses:
@@ -246,7 +247,8 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/DateParam'
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
         - $ref: '#/components/parameters/OrderParam'
       responses:
         '200':
@@ -301,7 +303,8 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/DateParam'
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
         - $ref: '#/components/parameters/OrderParam'
 
       responses:
@@ -319,7 +322,8 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/DateParam'
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
         - $ref: '#/components/parameters/OrderParam'
       responses:
         '200':
@@ -665,20 +669,31 @@ components:
             type: array
             items:
               properties:
-                category_name:
+                name:
                   type: string
                   example: "category name"
                 transactions_sum:
                   $ref: '#/components/schemas/Decimal'
 
   parameters:
-    DateParam:
+    YearParam:
+      in: query
+      name: transactions_year
+      required: false
+      schema:
+        type: string
+        format: integer
+        example: 2022
+
+    MonthParam:
       in: query
       name: transactions_month
       required: false
       schema:
         type: string
-        format: date
+        format: integer
+        example: 12
+
     OrderParam:
       in: query
       name: order

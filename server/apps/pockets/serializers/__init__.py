@@ -7,5 +7,5 @@ from .transaction import (
 from .transaction_category import (
     TransactionCategorySerializer,
     TransactionCategoryTransactionSumSerializer,
-    TransactionCategoryTransactionSumListSerializer,
+    TransactionCategoryTransactionsSerializer,
 )

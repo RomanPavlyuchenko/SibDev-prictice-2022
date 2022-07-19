@@ -21,22 +21,26 @@ class TransactionCategoryQuerySet(QuerySet):
 
     def get_list_top_categories(self) -> List[dict[str, Decimal]]:
         top_rank = 3
-        top_category_list = list()
-        other_category = {
-            'category_name': 'Other',
-            'transactions_sum': Decimal()
-                 }
-        for i in range(self.values().count()):
-            if i < top_rank:
-                top_category_list.append(
-                    {
-                        'category_name': self.values()[i]['name'],
-                        'transactions_sum': self.values()[i]['transactions_sum'],
-                    }
-                )
-            else:
-                other_category['transactions_sum'] += self.values()[i]['transactions_sum']
-        if self.values().count() > top_rank:
-            top_category_list.append(other_category)
+        top_categories = list()
+        queryset = self.annotate_with_transaction_sums()
 
-        return top_category_list
+        if queryset.count() > top_rank:
+            top_categories.extend(
+                queryset.values()[:top_rank])
+
+            top_categories.append(
+                {'name': 'Другие',
+                 'transactions_sum':
+                     queryset[top_rank:].aggregate(
+                         sum=Coalesce(
+                             Sum('transactions_sum'),
+                             0,
+                             output_field=DecimalField(),
+                         ),
+                     )['sum']
+                 }
+            )
+        else:
+            top_categories.extend(queryset)
+
+        return top_categories

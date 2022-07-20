@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from .managers import TransactionManager
+from ..constants import TransactionTypes
 
 
 class Transaction(models.Model):
@@ -18,6 +19,14 @@ class Transaction(models.Model):
         on_delete=models.CASCADE,
         related_name='transactions',
         verbose_name='Категория',
+        null=True,
+        blank=True,
+    )
+    transaction_type = models.CharField(
+        max_length=7,
+        choices=TransactionTypes.CHOICES,
+        default=TransactionTypes.EXPENSE,
+        verbose_name='Тип категории',
     )
     transaction_date = models.DateField(
         verbose_name='Дата операции',
@@ -36,4 +45,7 @@ class Transaction(models.Model):
         verbose_name_plural = 'Операции'
 
     def __str__(self) -> str:
-        return f'{self.category} {self.amount}'
+        if self.category:
+            return f'{self.category} {self.amount}'
+        else:
+            return f'{TransactionTypes.INCOME} {self.amount}'

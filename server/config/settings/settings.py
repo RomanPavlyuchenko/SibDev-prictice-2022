@@ -139,7 +139,10 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': f'{ANONYMOUS_USER_THROTTLE_RATE}/day',
         'user': f'{AUTHENTICATED_USER_THROTTLE_RATE}/day',
-    }
+    },
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    )
 }
 
 ##################################################################
@@ -182,4 +185,3 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
 }
-

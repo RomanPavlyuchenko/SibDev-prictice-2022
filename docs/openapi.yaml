@@ -88,6 +88,9 @@ paths:
           schema:
             type: number
           required: false
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
+        - $ref: '#/components/parameters/OrderParam'
 
       responses:
         '200':
@@ -217,6 +220,24 @@ paths:
         '401':
           description: "Unauthorized"
 
+
+  '/pockets/transactions/balance/':
+    get:
+      tags:
+        - pockets
+        - transactions
+      summary: "Pocket balance"
+      security:
+        - bearerAuth: []
+
+      responses:
+        '200':
+          $ref: '#/components/responses/TransactionBalance200'
+        '401':
+          description: "Unauthorized"
+
+
+
   '/pockets/categories/':
     get:
       tags:
@@ -225,6 +246,10 @@ paths:
       summary: "Categories list"
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
+        - $ref: '#/components/parameters/OrderParam'
       responses:
         '200':
           $ref: '#/components/responses/CategoriesList200'
@@ -268,74 +293,6 @@ paths:
           description: "Unauthorized"
         '404':
           description: "Not Found"
-    put:
-      tags:
-        - pockets
-        - categories
-      summary: "Category update"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: category_id
-          in: path
-          schema:
-            type: number
-          required: true
-      requestBody:
-        $ref: '#/components/requestBodies/CategoryCreateRequestBody'
-      responses:
-        '200':
-          $ref: '#/components/responses/CategoriesList200'
-        '400':
-          $ref: '#/components/responses/CategoryCreate400'
-        '401':
-          description: "Unauthorized"
-        '404':
-          description: "Not Found"
-    patch:
-      tags:
-        - pockets
-        - categories
-      summary: "Category partial update"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: category_id
-          in: path
-          schema:
-            type: number
-          required: true
-      requestBody:
-        $ref: '#/components/requestBodies/CategoryCreateRequestBody'
-      responses:
-        '200':
-          $ref: '#/components/responses/CategoriesList200'
-        '400':
-          $ref: '#/components/responses/CategoryCreate400'
-        '401':
-          description: "Unauthorized"
-        '404':
-          description: "Not Found"
-    delete:
-      tags:
-        - pockets
-        - categories
-      summary: "Category delete"
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: category_id
-          in: path
-          schema:
-            type: number
-          required: true
-      responses:
-        '204':
-          description: "No Content"
-        '401':
-          description: "Unauthorized"
-        '404':
-          description: "Not Found"
 
   '/pockets/categories/transactions-by-categories/':
     get:
@@ -345,12 +302,36 @@ paths:
       summary: "Transaction sums by categories"
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
+        - $ref: '#/components/parameters/OrderParam'
 
       responses:
         '200':
           $ref: '#/components/responses/CategoriesWithExpensesList200'
         '401':
           description: "Unauthorized"
+
+  '/pockets/categories/top-categories-by-transactions/':
+    get:
+      tags:
+        - pockets
+        - categories
+      summary: "Top 3 categories by sum transactions"
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearParam'
+        - $ref: '#/components/parameters/MonthParam'
+        - $ref: '#/components/parameters/OrderParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/CategoriesTopList200'
+        '401':
+          description: "Unauthorized"
+
+
 
 components:
   securitySchemes:
@@ -369,9 +350,6 @@ components:
       properties:
         name:
           type: string
-        category_type:
-          type: string
-          enum: ["income", "expense"]
 
     CategoryBase:
       allOf:
@@ -396,6 +374,9 @@ components:
           type: number
         category:
           $ref: '#/components/schemas/CategoryBase'
+        transaction_type:
+          type: string
+          enum: [ "income", "expense" ]
         transaction_date:
           type: string
           format: date
@@ -447,6 +428,9 @@ components:
               category:
                 type: number
                 description: category id
+              transaction_type:
+                type: string
+                enum: ["income", "expense"]
               transaction_date:
                 type: string
                 format: date
@@ -610,11 +594,11 @@ components:
                 items:
                   type: string
                   example: "Убедитесь, что это значение больше либо равно 0.01."
-              category:
+              non_field_errors:
                 type: array
                 items:
                   type: string
-                  example: "У пользователя нет такой категории"
+                  example: "Поле категория обязательно для транзакции типа расход"
 
 
     TransactionGlobal200:
@@ -627,6 +611,16 @@ components:
               total_income:
                 $ref: '#/components/schemas/Decimal'
               total_expenses:
+                $ref: '#/components/schemas/Decimal'
+
+    TransactionBalance200:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              balance:
                 $ref: '#/components/schemas/Decimal'
 
     CategoriesList200:
@@ -657,11 +651,6 @@ components:
                 items:
                   type: string
                   example: "У пользоваетля уже существует категория с таким названием и типом"
-              category_type:
-                type: array
-                items:
-                  type: string
-                  example: "Значения нет среди допустимых вариантов."
 
     CategoriesWithExpensesList200:
       description: "Success"
@@ -671,3 +660,46 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/CategoryWithExpensesSums'
+
+    CategoriesTopList200:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              properties:
+                name:
+                  type: string
+                  example: "category name"
+                transactions_sum:
+                  $ref: '#/components/schemas/Decimal'
+
+  parameters:
+    YearParam:
+      in: query
+      name: transactions_year
+      required: false
+      schema:
+        type: string
+        format: integer
+        example: 2022
+
+    MonthParam:
+      in: query
+      name: transactions_month
+      required: false
+      schema:
+        type: string
+        format: integer
+        example: 12
+
+    OrderParam:
+      in: query
+      name: order
+      required: false
+      schema:
+        type: string
+        example: 'amount'
+
+

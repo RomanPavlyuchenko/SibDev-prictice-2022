@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.core.validators import MinValueValidator
@@ -30,12 +31,21 @@ class Transaction(models.Model):
     )
     transaction_date = models.DateField(
         verbose_name='Дата операции',
+        default=date.today
     )
     amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         verbose_name='Сумма операции',
         validators=(MinValueValidator(Decimal('0.01')),),
+    )
+    balance = models.ForeignKey(
+        to='targets.TargetBalance',
+        on_delete=models.CASCADE,
+        related_name='transactions',
+        verbose_name='Баланс цели',
+        null=True,
+        blank=True,
     )
 
     objects = TransactionManager()

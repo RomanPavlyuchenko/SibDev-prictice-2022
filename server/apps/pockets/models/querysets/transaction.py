@@ -27,6 +27,7 @@ class TransactionQuerySet(QuerySet):
             ),
         )
 
-    def aggregate_balance(self) -> dict[str, Decimal]:
+    def aggregate_balance(self, is_abs=False) -> dict[str, Decimal]:
         totals = self.aggregate_totals()
-        return {'balance': totals.get('total_income') - totals.get('total_expenses')}
+        balance = totals.get('total_income') - totals.get('total_expenses')
+        return {'balance': abs(balance) if is_abs else balance}

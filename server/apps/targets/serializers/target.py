@@ -1,29 +1,31 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .target_balance import TargetBalanceRetrieveSerializer
 from ..constants import TargetErrors
 from ..models import Target
+from ...pockets.models import Transaction
 
 
-class TargetSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Target
-        fields = (
-            'id', 'name', 'create_date',
-            'expected_amount', 'target_deadline',
-        )
-
-
-class TargetRetrieveSerializer(serializers.ModelSerializer):
-    balance = TargetBalanceRetrieveSerializer()
+class TargetListSerializer(serializers.ModelSerializer):
     transactions_sum = serializers.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         model = Target
         fields = (
-            'id', 'name', 'create_date', 'expected_amount',
-            'target_deadline', 'balance', 'transactions_sum',
+            'id', 'name', 'create_date', 'target_amount',
+            'target_term', 'transactions_sum', 'percent',
+            'initial_payment', 'category',
+        )
+
+
+class TargetRetrieveSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Target
+        fields = (
+            'id', 'name', 'create_date', 'target_amount',
+            'target_term', 'transactions_sum',
+            'percent', 'initial_payment', 'category',
         )
 
 
@@ -32,16 +34,17 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         model = Target
         fields = (
             'id', 'name',
-            'target_deadline', 'category',
-            'balance', 'expected_amount',
+            'target_term', 'category',
+            'balances', 'target_amount',
+            'percent', 'initial_payment',
         )
-
-    def is_valid(self, raise_exception=False):
-        return super().is_valid(raise_exception)
 
     def validate(self, attrs: dict) -> dict:
         user = self.context['request'].user
         name = attrs.get('name', None)
+        user_balance = Transaction.objects.get_queryset().filter(
+            user=user
+        ).aggregate_balance()['balance']
         excludes = {'id': self.instance.id} if self.instance else {}
 
         if name and Target.objects.filter(
@@ -54,6 +57,11 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         category = attrs.get('category', None)
         if category and category not in user.categories.all():
             raise serializers.ValidationError(TargetErrors.NOT_USERS_CATEGORY)
+        init_pay = attrs.get('initial_payment', None)
+        if init_pay and init_pay > user_balance:
+            raise serializers.ValidationError(TargetErrors.BALANCE_TOO_LOW)
+        if init_pay and self.instance.initial_payment:
+            raise serializers.ValidationError(TargetErrors.FIELD_NOT_EDITABLE)
 
         return attrs
 
@@ -61,8 +69,3 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         validated_data['create_date'] = timezone.now()
         return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        if validated_data.get('expected_amount') < instance.expected_amount:
-            raise serializers.ValidationError(TargetErrors.EXPECTED_AMOUNT_TOO_LOW)
-        return super().update(instance, validated_data)

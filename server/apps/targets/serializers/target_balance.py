@@ -11,29 +11,17 @@ class TargetBalanceRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TargetBalance
-        fields = ('id', 'percent',)
+        fields = ('id', 'amount', 'transaction_date', 'target')
 
 
 class TargetBalanceSerializer(serializers.ModelSerializer):
-    transactions = TransactionCreateSerializer()
 
     class Meta:
         model = TargetBalance
-        fields = ('id', 'transactions', 'percent',)
-
-    def validate(self, attrs: dict) -> dict:
-        if 'transactions' in self.context:
-            attrs['transactions'] = self.context['transactions']
-        return attrs
+        fields = ('id', 'amount', 'transaction_date', 'target')
 
     def create(self, validated_data):
-        transaction_data = validated_data.pop('transactions')
-        transaction_data['user'] = self.context['request'].user
-        transaction = Transaction.objects.create(**transaction_data)
-        balance = TargetBalance.objects.create(**validated_data)
-        balance.transactions.add(transaction)
-
-        return balance
+        return super().create(validated_data)
 
     @property
     def data(self) -> OrderedDict:

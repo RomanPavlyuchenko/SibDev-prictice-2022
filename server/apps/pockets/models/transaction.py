@@ -39,14 +39,6 @@ class Transaction(models.Model):
         verbose_name='Сумма операции',
         validators=(MinValueValidator(Decimal('0.01')),),
     )
-    balance = models.ForeignKey(
-        to='targets.TargetBalance',
-        on_delete=models.CASCADE,
-        related_name='transactions',
-        verbose_name='Баланс цели',
-        null=True,
-        blank=True,
-    )
 
     objects = TransactionManager()
 

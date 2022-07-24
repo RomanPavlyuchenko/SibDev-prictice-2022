@@ -5,5 +5,4 @@ from .target_balance import (
 from .target import (
     TargetCreateSerializer,
     TargetRetrieveSerializer,
-    TargetSerializer,
 )

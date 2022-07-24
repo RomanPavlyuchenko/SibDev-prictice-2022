@@ -1,8 +1,8 @@
 from datetime import date
 from decimal import Decimal
 
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django.core.validators import MinValueValidator
 
 from .managers import TargetManager
 
@@ -22,21 +22,14 @@ class Target(models.Model):
         default=date.today,
         verbose_name='Дата создания'
     )
-    target_deadline = models.DateField(
-        verbose_name='Срок цели'
+    target_term = models.PositiveSmallIntegerField(
+        verbose_name='Срок цели в месяцах',
+        validators=(MinValueValidator(1),),
     )
-    balance = models.OneToOneField(
-        to='targets.TargetBalance',
-        on_delete=models.CASCADE,
-        related_name='target',
-        verbose_name='Баланс',
-        null=True,
-        blank=True,
-    )
-    expected_amount = models.DecimalField(
+    target_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name='Сумма операции',
+        verbose_name='Целевая сумма',
         validators=(MinValueValidator(Decimal('0.01')),),
     )
     category = models.ForeignKey(
@@ -44,6 +37,24 @@ class Target(models.Model):
         on_delete=models.CASCADE,
         related_name='targets',
         verbose_name='Категория',
+    )
+    percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        verbose_name='Процент',
+        validators=(
+            MinValueValidator(Decimal('0.01')),
+            MaxValueValidator(Decimal('100.00')),
+        ),
+        default=Decimal('0.00'),
+    )
+    initial_payment = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Первоначальный взнос',
+        validators=(MinValueValidator(Decimal('0.01')),),
+        default=Decimal(0)
+
     )
 
     objects = TargetManager()

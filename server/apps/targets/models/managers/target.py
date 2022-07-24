@@ -9,3 +9,6 @@ class TargetManager(Manager):
             self.model,
             using=self._db,
         )
+
+    def aggregate_total(self):
+        return self.get_queryset().aggregate_total()

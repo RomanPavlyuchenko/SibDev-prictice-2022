@@ -1,4 +1,1 @@
-from .errors import (
-    TargetErrors,
-    TargetBalanceTotalException,
-)
+from .errors import TargetErrors

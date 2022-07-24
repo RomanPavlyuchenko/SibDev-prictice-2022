@@ -1,6 +1,8 @@
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
+from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -24,10 +26,10 @@ class TargetViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update',):
             serializer_class = TargetCreateSerializer
-        elif self.action in ('retrieve',):
-            serializer_class = TargetRetrieveSerializer
-        else:
+        elif self.action in ('list', 'retrieve'):
             serializer_class = TargetListSerializer
+        else:
+            serializer_class = TargetRetrieveSerializer
         return serializer_class
 
     def get_queryset(self) -> TargetQuerySet:
@@ -36,7 +38,7 @@ class TargetViewSet(viewsets.ModelViewSet):
         ).prefetch_related('balances').order_by(
             '-create_date',
         )
-        if self.action == 'list':
+        if self.action in ('list', 'retrieve',):
             queryset = queryset.annotate_with_transaction_sums()
         if self.action in ('list', 'destroy',):
             queryset = queryset.annotate_deadline()
@@ -87,6 +89,39 @@ class TargetViewSet(viewsets.ModelViewSet):
             instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # def get_object(self):
+
+    @action(methods=('POST',), detail=True, url_path='top-up')
+    def top_up(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.balances.add(self._create_balance(request))
+        instance.save()
+        return super().retrieve(request, *args, **kwargs)
+
+    @action(methods=('GET',), detail=True, url_path='close')
+    def close_target(self, request, *args, **kwargs):
+        instance = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk', None))
+        total = self.get_queryset().filter(
+            pk=kwargs['pk']
+        ).aggregate_total()['total']
+        if total >= instance.target_amount and instance.is_open:
+            transaction_serializer = TransactionCreateSerializer(
+                context={'request': request},
+                data={
+                    'amount': str(total),
+                    'transaction_type': TransactionTypes.INCOME,
+                }
+            )
+            transaction_serializer.is_valid(raise_exception=True)
+            transaction_serializer.save()
+            instance.is_open = False
+            instance.save()
+            return Response(
+                TargetRetrieveSerializer(instance).data,
+                status=status.HTTP_200_OK,
+            )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
     def _create_balance(self, request: Request, *args, **kwargs) -> TargetBalance:
         instance = self.get_object()
         if 'initial_payment' in request.data:
@@ -100,17 +135,17 @@ class TargetViewSet(viewsets.ModelViewSet):
             'target': instance.id,
         }
 
+        balance_serializer = TargetBalanceSerializer(
+            context={'request': request},
+            data=data,
+        )
+        balance_serializer.is_valid(raise_exception=True)
+
         transaction_serializer = TransactionCreateSerializer(
             context={'request': request},
             data=data,
         )
         transaction_serializer.is_valid(raise_exception=True)
         transaction_serializer.save()
-
-        balance_serializer = TargetBalanceSerializer(
-            context={'request': request},
-            data=data,
-        )
-        balance_serializer.is_valid(raise_exception=True)
 
         return balance_serializer.save()

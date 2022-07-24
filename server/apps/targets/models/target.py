@@ -54,7 +54,10 @@ class Target(models.Model):
         verbose_name='Первоначальный взнос',
         validators=(MinValueValidator(Decimal('0.01')),),
         default=Decimal(0)
-
+    )
+    is_open = models.BooleanField(
+        verbose_name='Цель открыта',
+        default=True,
     )
 
     objects = TargetManager()

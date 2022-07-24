@@ -14,7 +14,7 @@ class TargetListSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'create_date', 'target_amount',
             'target_term', 'transactions_sum', 'percent',
-            'initial_payment', 'category',
+            'initial_payment', 'category', 'is_open',
         )
 
 
@@ -24,7 +24,7 @@ class TargetRetrieveSerializer(serializers.ModelSerializer):
         model = Target
         fields = (
             'id', 'name', 'create_date', 'target_amount',
-            'target_term', 'transactions_sum',
+            'target_term', 'is_open',
             'percent', 'initial_payment', 'category',
         )
 
@@ -42,9 +42,7 @@ class TargetCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict) -> dict:
         user = self.context['request'].user
         name = attrs.get('name', None)
-        user_balance = Transaction.objects.get_queryset().filter(
-            user=user
-        ).aggregate_balance()['balance']
+        is_open = self.instance.is_open if self.instance else True
         excludes = {'id': self.instance.id} if self.instance else {}
 
         if name and Target.objects.filter(
@@ -58,10 +56,10 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         if category and category not in user.categories.all():
             raise serializers.ValidationError(TargetErrors.NOT_USERS_CATEGORY)
         init_pay = attrs.get('initial_payment', None)
-        if init_pay and init_pay > user_balance:
-            raise serializers.ValidationError(TargetErrors.BALANCE_TOO_LOW)
         if init_pay and self.instance.initial_payment:
             raise serializers.ValidationError(TargetErrors.FIELD_NOT_EDITABLE)
+        if not is_open:
+            raise serializers.ValidationError(TargetErrors.TARGET_IS_CLOSED)
 
         return attrs
 

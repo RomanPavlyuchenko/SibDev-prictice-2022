@@ -40,6 +40,8 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs: dict) -> dict:
+        editable_fields = ('name', 'target_term', 'percent', 'target_amount')
+        forbidden_fields = set(self.Meta.fields).difference(editable_fields).intersection(attrs)
         user = self.context['request'].user
         name = attrs.get('name', None)
         user_balance = Transaction.objects.get_queryset().filter(
@@ -60,8 +62,10 @@ class TargetCreateSerializer(serializers.ModelSerializer):
         init_pay = attrs.get('initial_payment', None)
         if init_pay and init_pay > user_balance:
             raise serializers.ValidationError(TargetErrors.BALANCE_TOO_LOW)
-        if init_pay and self.instance.initial_payment:
-            raise serializers.ValidationError(TargetErrors.FIELD_NOT_EDITABLE)
+        if excludes and forbidden_fields:
+            raise serializers.ValidationError({
+                attr: TargetErrors.FIELD_NOT_EDITABLE for attr in forbidden_fields
+            })
 
         return attrs
 

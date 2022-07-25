@@ -1,18 +1,22 @@
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from .filtersets import TargetFilter
 from ..models import Target, TargetBalance
 from ..models.querysets import TargetQuerySet
-from ..serializers import TargetCreateSerializer, TargetRetrieveSerializer, TargetBalanceSerializer
+from ..serializers import (
+    TargetCreateSerializer,
+    TargetRetrieveSerializer,
+    TargetBalanceCreateSerializer,
+)
 from ..serializers.target import TargetListSerializer
 from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
-from ...pockets.serializers import TransactionCreateSerializer
 
 
 class TargetViewSet(viewsets.ModelViewSet):
@@ -25,7 +29,7 @@ class TargetViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update',):
             serializer_class = TargetCreateSerializer
-        elif self.action in ('retrieve',):
+        elif self.action in ('retrieve', 'top_up'):
             serializer_class = TargetRetrieveSerializer
         else:
             serializer_class = TargetListSerializer
@@ -67,21 +71,36 @@ class TargetViewSet(viewsets.ModelViewSet):
             pk=kwargs['pk']
         ).aggregate_total()['total']
 
-        if total >= instance.target_amount:
+        if total >= instance.target_amount and instance.is_open:
             Transaction.objects.create(
                 amount=total,
-                transaction_type=TransactionTypes.INCOME
+                category_id=instance.category.id,
+                transaction_type=TransactionTypes.INCOME,
+                user=request.user,
             )
 
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # def get_object(self):
-
     @action(methods=('POST',), detail=True, url_path='top-up')
     def top_up(self, request, *args, **kwargs):
         instance = self.get_object()
-        instance.balances.add(self._create_balance(request))
+        data = {
+            'target': instance.id,
+            'amount': request.data.get('amount', None),
+            'transaction': {
+                'category': instance.category.id,
+                'amount': request.data.get('amount', None),
+                'transaction_type': TransactionTypes.EXPENSE,
+            }
+        }
+        balance_serializer = TargetBalanceCreateSerializer(
+            context={'request': request},
+            data=data
+        )
+        balance_serializer.is_valid(raise_exception=True)
+        balance = balance_serializer.save()
+        instance.balances.add(balance)
         instance.save()
         return super().retrieve(request, *args, **kwargs)
 
@@ -92,15 +111,12 @@ class TargetViewSet(viewsets.ModelViewSet):
             pk=kwargs['pk']
         ).aggregate_total()['total']
         if total >= instance.target_amount and instance.is_open:
-            transaction_serializer = TransactionCreateSerializer(
-                context={'request': request},
-                data={
-                    'amount': str(total),
-                    'transaction_type': TransactionTypes.INCOME,
-                }
+            Transaction.objects.create(
+                amount=total,
+                category_id=instance.category.id,
+                transaction_type=TransactionTypes.INCOME,
+                user=request.user,
             )
-            transaction_serializer.is_valid(raise_exception=True)
-            transaction_serializer.save()
             instance.is_open = False
             instance.save()
             return Response(

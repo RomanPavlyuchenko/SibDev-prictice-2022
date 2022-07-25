@@ -1,5 +1,5 @@
 from .target_balance import (
-    TargetBalanceSerializer,
+    TargetBalanceCreateSerializer,
     TargetBalanceRetrieveSerializer,
 )
 from .target import (

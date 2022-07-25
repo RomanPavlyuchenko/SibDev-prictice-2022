@@ -1,4 +1,3 @@
-from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
 from rest_framework.permissions import IsAuthenticated
@@ -8,11 +7,10 @@ from rest_framework.response import Response
 from .filtersets import TargetFilter
 from ..models import Target, TargetBalance
 from ..models.querysets import TargetQuerySet
-from ..serializers import TargetCreateSerializer, TargetRetrieveSerializer, TargetBalanceSerializer
+from ..serializers import TargetCreateSerializer, TargetRetrieveSerializer
 from ..serializers.target import TargetListSerializer
 from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
-from ...pockets.serializers import TransactionCreateSerializer
 
 
 class TargetViewSet(viewsets.ModelViewSet):
@@ -67,15 +65,12 @@ class TargetViewSet(viewsets.ModelViewSet):
             pk=kwargs['pk']
         ).aggregate_total()['total']
 
-        transaction_serializer = TransactionCreateSerializer(
-            context={'request': request},
-            data={
-                'transaction_type': TransactionTypes.INCOME,
-                'amount': total,
-            },
-        )
-        transaction_serializer.is_valid(raise_exception=True)
-        transaction_serializer.save()
+        if total >= instance.target_amount:
+            Transaction.objects.create(
+                amount=total,
+                transaction_type=TransactionTypes.INCOME
+            )
+
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

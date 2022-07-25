@@ -16,7 +16,8 @@ class TargetListSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'create_date', 'target_amount',
             'target_term', 'transactions_sum', 'percent',
-            'initial_payment', 'category',
+            'initial_payment', 'category', 'is_closed',
+            'closing_date',
         )
 
 

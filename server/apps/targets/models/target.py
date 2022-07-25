@@ -55,9 +55,13 @@ class Target(models.Model):
         validators=(MinValueValidator(Decimal('0.01')),),
         default=Decimal(0)
     )
-    is_open = models.BooleanField(
+    is_closed = models.BooleanField(
         verbose_name='Цель открыта',
-        default=True,
+        default=False,
+    )
+    closing_date = models.DateField(
+        default=None,
+        null=True,
     )
 
     objects = TargetManager()

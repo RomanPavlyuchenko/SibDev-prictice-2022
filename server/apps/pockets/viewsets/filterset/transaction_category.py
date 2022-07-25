@@ -1,6 +1,5 @@
 import django_filters
 
-from ...models.transaction import TransactionTypes
 from ...models.transaction_category import TransactionCategory
 
 
@@ -26,4 +25,4 @@ class TransactionCategoryFilter(django_filters.FilterSet):
 
     class Meta:
         model = TransactionCategory
-        fields = ('transactions__transaction_date',)
+        fields = ('transactions',)

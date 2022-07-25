@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.core.validators import MinValueValidator
@@ -30,6 +31,7 @@ class Transaction(models.Model):
     )
     transaction_date = models.DateField(
         verbose_name='Дата операции',
+        default=date.today
     )
     amount = models.DecimalField(
         max_digits=10,

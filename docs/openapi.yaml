@@ -13,8 +13,11 @@ tags:
     description: "Users namespace"
   - name: pockets
     description: "Pockets namespace"
+  - name: targets
+    description: "Targets namespace"
   - name: transactions
   - name: categories
+  - name: targets
 
 paths:
   '/auth/register/':
@@ -90,7 +93,7 @@ paths:
           required: false
         - $ref: '#/components/parameters/YearParam'
         - $ref: '#/components/parameters/MonthParam'
-        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/OrderPocketsParam'
 
       responses:
         '200':
@@ -249,7 +252,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/YearParam'
         - $ref: '#/components/parameters/MonthParam'
-        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/OrderPocketsParam'
       responses:
         '200':
           $ref: '#/components/responses/CategoriesList200'
@@ -305,7 +308,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/YearParam'
         - $ref: '#/components/parameters/MonthParam'
-        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/OrderPocketsParam'
 
       responses:
         '200':
@@ -324,14 +327,145 @@ paths:
       parameters:
         - $ref: '#/components/parameters/YearParam'
         - $ref: '#/components/parameters/MonthParam'
-        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/OrderPocketsParam'
       responses:
         '200':
           $ref: '#/components/responses/CategoriesTopList200'
         '401':
           description: "Unauthorized"
 
+  '/targets/targets/':
+    get:
+      tags:
+        - targets
+      summary: "Targets list"
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrderTargetsParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/TargetsList200'
+        '401':
+          description: "Unauthorized"
 
+    post:
+      tags:
+        - targets
+      summary: "Target create"
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/TargetCreateRequestBody'
+      responses:
+        '201':
+          $ref: '#/components/responses/TargetCreate201'
+        '401':
+          description: "Unauthorized"
+
+  '/targets/targets/{target_id}/':
+    get:
+      tags:
+        - targets
+      summary: "Target retrieve"
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: target_id
+          in: path
+          schema:
+            type: number
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/Target200'
+        '401':
+          description: "Unauthorized"
+        '404':
+          description: "Not Found"
+    put:
+      tags:
+        - targets
+      summary: "Target update"
+      parameters:
+        - name: target_id
+          in: path
+          schema:
+            type: number
+          required: true
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        $ref: '#/components/requestBodies/TargetCreateRequestBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/Target200'
+        '401':
+          description: "Unauthorized"
+        '404':
+          description: "Not Found"
+    patch:
+      tags:
+        - targets
+      summary: "Target partial update"
+      parameters:
+        - name: target_id
+          in: path
+          schema:
+            type: number
+          required: true
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        $ref: '#/components/requestBodies/TargetCreateRequestBody'
+      responses:
+        '200':
+          $ref: '#/components/responses/Target200'
+        '401':
+          description: "Unauthorized"
+        '404':
+          description: "Not Found"
+    delete:
+      tags:
+        - targets
+      summary: "Transaction delete"
+      parameters:
+        - name: target_id
+          in: path
+          schema:
+            type: number
+          required: true
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '204':
+          description: "No Content"
+        '401':
+          description: "Unauthorized"
+        '404':
+          description: "Not Found"
+
+
+  '/targets/targets/{target_id}/transactions/':
+    post:
+      tags:
+        - targets
+      summary: "Add transaction to target"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+      responses:
+        '200':
+          $ref: '#/components/responses/Transactions200'
+        '401':
+          description: "Unauthorized"
 
 components:
   securitySchemes:
@@ -359,6 +493,24 @@ components:
               type: number
         - $ref: '#/components/schemas/CategoryCreate'
 
+    TargetBase:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        create_date:
+          type: string
+          format: date
+        expected_amount:
+          type: string
+        target_deadline:
+          type: string
+          format: date
+        transaction_sum:
+          type: string
+
     CategoryWithExpensesSums:
       allOf:
         - $ref: '#/components/schemas/CategoryBase'
@@ -382,6 +534,36 @@ components:
           format: date
         amount:
           $ref: '#/components/schemas/Decimal'
+
+    BalanceRetrieve:
+      type: object
+      properties:
+        id:
+          type: number
+        percent:
+          type: number
+
+    TargetRetrieve:
+      allOf:
+        - $ref: '#/components/schemas/BalanceRetrieve'
+        - $ref: '#/components/schemas/TargetBase'
+
+    TargetCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        target_deadline:
+          type: string
+          format: date
+        category:
+          type: number
+        amount:
+          type: number
+          required: false
+        expected_amount:
+          type: number
+
 
   requestBodies:
     RegistrationRequestBody:
@@ -443,6 +625,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/CategoryCreate'
+
+    TargetCreateRequestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TargetCreate'
 
   responses:
     Registration201:
@@ -675,6 +863,46 @@ components:
                 transactions_sum:
                   $ref: '#/components/schemas/Decimal'
 
+    TargetCreate201:
+      description: "Created"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/TargetBase'
+
+
+    TargetsList200:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              count:
+                type: number
+              next:
+                type: string
+                format: uri
+                nullable: true
+              previous:
+                type: string
+                format: uri
+                nullable: true
+              result:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TargetRetrieve'
+
+    Target200:
+      description: "Success"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/TargetBase'
+
+
   parameters:
     YearParam:
       in: query
@@ -694,12 +922,20 @@ components:
         format: integer
         example: 12
 
-    OrderParam:
+    OrderPocketsParam:
       in: query
       name: order
       required: false
       schema:
         type: string
         example: 'amount'
+
+    OrderTargetsParam:
+      in: query
+      name: order
+      required: false
+      schema:
+        type: string
+        enum: ['deadline', 'sum', 'created', 'percent']
 
 

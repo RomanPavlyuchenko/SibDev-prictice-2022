@@ -5,7 +5,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from .managers import TargetBalanceManager
-from ..constants import TargetBalanceTypes
 
 
 class TargetBalance(models.Model):
@@ -25,11 +24,9 @@ class TargetBalance(models.Model):
         related_name='balances',
         verbose_name='Цель',
     )
-    replenishment_method = models.CharField(
-        max_length=7,
-        choices=TargetBalanceTypes.CHOICES,
-        default=TargetBalanceTypes.USER,
-        verbose_name='Способ пополнения',
+    is_percent = models.BooleanField(
+        verbose_name='Цель открыта',
+        default=False,
     )
 
     objects = TargetBalanceManager()

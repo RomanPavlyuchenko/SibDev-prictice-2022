@@ -20,6 +20,27 @@ from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
 
 
+def percent_accrual():
+    queryset = Target.objects.get_queryset().filter(
+        is_closed=False
+    ).prefetch_related(
+        'balances'
+    ).annotate_with_transaction_sums()
+    balances = []
+    for target in queryset:
+        percent_per_day = target.transactions_sum / 100 * (target.percent / 365)
+        if percent_per_day > 0:
+            balances.append(
+                TargetBalance(
+                    amount=percent_per_day,
+                    target_id=target.id,
+                    is_percent=True
+                )
+            )
+    TargetBalance.objects.bulk_create(balances)
+    return balances
+
+
 class TargetViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.LimitOffsetPagination
     pagination_class.default_limit = 20

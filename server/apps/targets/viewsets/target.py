@@ -2,7 +2,6 @@ from datetime import date
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
-from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -43,10 +42,12 @@ class TargetViewSet(viewsets.ModelViewSet):
         ).prefetch_related('balances').order_by(
             '-create_date',
         )
-        if self.action in ('list', 'retrieve',):
+        if self.action == 'retrieve':
             queryset = queryset.annotate_with_transaction_sums()
-        if self.action in ('list', 'destroy',):
+        elif self.action == 'destroy':
             queryset = queryset.annotate_deadline()
+        elif self.action == 'list':
+            queryset = queryset.annotate_with_transaction_sums().annotate_deadline()
         return queryset
 
     def create(self, request, *args, **kwargs):

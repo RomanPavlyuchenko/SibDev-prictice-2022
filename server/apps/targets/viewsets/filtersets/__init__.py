@@ -1,1 +1,1 @@
-from target import TargetFilter
+from .target import TargetFilter

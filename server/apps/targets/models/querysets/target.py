@@ -26,5 +26,15 @@ class TargetQuerySet(QuerySet):
         return self.annotate(
             deadline=ExpressionWrapper(
                 F('create_date') + Coalesce('target_term', 0) * 30,
-                output_field=models.DateField())
+                output_field=models.DateField()
+            )
+        )
+
+    def annotate_daily_percent(self, *args, **kwargs):
+        queryset = self.annotate_with_transaction_sums()
+        return queryset.annotate(
+            daily_percent=ExpressionWrapper(
+                F('transactions_sum') * F('percent') / (365 * 100),
+                output_field=models.DecimalField(),
+            )
         )

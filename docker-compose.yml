@@ -21,3 +21,33 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "5430:5432"
+
+  redis:
+    image: redis
+
+  celery_worker:
+    build:
+      context: ./
+      dockerfile: ./server/Dockerfile
+    command: celery --app=apps.targets  worker --loglevel=DEBUG --logfile=apps/targets/celery/celery.log
+    volumes:
+      - ./server:/server
+    depends_on:
+      - server
+      - redis
+    environment:
+      DATABASE_URL: 'postgres://postgres:postgres@db:5432/postgres'
+
+  celery_beat:
+    build:
+      context: ./
+      dockerfile: ./server/Dockerfile
+    command: celery --app=apps.targets beat  --loglevel=DEBUG --logfile=apps/targets/celery/celery.log
+    volumes:
+      - ./server:/server
+    depends_on:
+      - server
+      - redis
+      - celery_worker

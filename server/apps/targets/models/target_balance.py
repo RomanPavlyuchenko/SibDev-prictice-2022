@@ -5,6 +5,20 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from .managers import TargetBalanceManager
+from ..models import Target
+
+
+def create_daily_percent():
+    targets = Target.objects.get_queryset().annotate_daily_percent()
+    targets_percent = [
+        TargetBalance(
+            amount=target.daily_percent,
+            target=target,
+            is_percent=True,
+        ) for target in targets
+    ]
+    TargetBalance.objects.bulk_create(targets_percent)
+    return len(targets_percent)
 
 
 class TargetBalance(models.Model):
@@ -25,7 +39,7 @@ class TargetBalance(models.Model):
         verbose_name='Цель',
     )
     is_percent = models.BooleanField(
-        verbose_name='Цель открыта',
+        verbose_name='Способ пополнения',
         default=False,
     )
 

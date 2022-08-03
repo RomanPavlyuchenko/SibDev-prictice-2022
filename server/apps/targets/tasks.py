@@ -2,9 +2,9 @@ import logging
 
 from .celery.celery import app
 
-from .viewsets.target import percent_accrual
+from .models.target_balance import create_daily_percent
 
 
 @app.task()
 def accrual_interest():
-    logging.info(f'percent was accrued for {len(percent_accrual())} targets')
+    logging.info(f'percent was accrued for {create_daily_percent()} targets')

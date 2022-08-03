@@ -7,4 +7,5 @@ from .models.target_balance import create_daily_percent
 
 @app.task()
 def accrual_interest():
-    logging.info(f'percent was accrued for {create_daily_percent()} targets')
+    percents_count = create_daily_percent()
+    logging.info(f'percent was accrued for {percents_count} targets')

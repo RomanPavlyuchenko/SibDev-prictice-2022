@@ -20,27 +20,6 @@ from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
 
 
-def percent_accrual():
-    queryset = Target.objects.get_queryset().filter(
-        is_closed=False
-    ).prefetch_related(
-        'balances'
-    ).annotate_with_transaction_sums()
-    balances = []
-    for target in queryset:
-        percent_per_day = target.transactions_sum / 100 * (target.percent / 365)
-        if percent_per_day > 0:
-            balances.append(
-                TargetBalance(
-                    amount=percent_per_day,
-                    target_id=target.id,
-                    is_percent=True
-                )
-            )
-    TargetBalance.objects.bulk_create(balances)
-    return balances
-
-
 class TargetViewSet(viewsets.ModelViewSet):
     pagination_class = pagination.LimitOffsetPagination
     pagination_class.default_limit = 20
@@ -63,10 +42,12 @@ class TargetViewSet(viewsets.ModelViewSet):
         ).prefetch_related('balances').order_by(
             '-create_date',
         )
-        if self.action in ('list', 'retrieve',):
+        if self.action == 'retrieve':
             queryset = queryset.annotate_with_transaction_sums()
-        if self.action in ('list', 'destroy',):
+        elif self.action == 'destroy':
             queryset = queryset.annotate_deadline()
+        elif self.action == 'list':
+            queryset = queryset.annotate_with_transaction_sums().annotate_deadline()
         return queryset
 
     def create(self, request, *args, **kwargs):

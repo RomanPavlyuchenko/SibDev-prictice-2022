@@ -15,7 +15,7 @@ from ..serializers import (
     TargetRetrieveSerializer,
     TargetBalanceCreateSerializer,
 )
-from ..serializers.target import TargetListSerializer
+from ..serializers.target import TargetListSerializer, TargetAnalyticsSerializer
 from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
 
@@ -32,6 +32,8 @@ class TargetViewSet(viewsets.ModelViewSet):
             serializer_class = TargetCreateSerializer
         elif self.action in ('list', 'retrieve', 'close_target'):
             serializer_class = TargetListSerializer
+        elif self.action == 'get_analytics':
+            serializer_class = TargetAnalyticsSerializer
         else:
             serializer_class = TargetRetrieveSerializer
         return serializer_class
@@ -49,6 +51,13 @@ class TargetViewSet(viewsets.ModelViewSet):
         elif self.action == 'list':
             queryset = queryset.annotate_with_transaction_sums().annotate_deadline()
         return queryset
+
+    def get_object(self):
+        if self.action == 'get_analytics':
+            obj = self.get_queryset().aggregate_analytics()
+        else:
+            obj = super().get_object()
+        return obj
 
     def create(self, request, *args, **kwargs):
         target_serializer = self.get_serializer_class()(
@@ -129,6 +138,10 @@ class TargetViewSet(viewsets.ModelViewSet):
             TargetRetrieveSerializer(instance).data,
             status=status.HTTP_200_OK,
         )
+
+    @action(methods=('GET',), detail=False, url_path='analytics')
+    def get_analytics(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def _create_balance(self, request: Request, *args, **kwargs) -> TargetBalance:
 

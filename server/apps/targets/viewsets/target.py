@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.http import JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +16,7 @@ from ..serializers import (
     TargetRetrieveSerializer,
     TargetBalanceCreateSerializer,
 )
-from ..serializers.target import TargetListSerializer, TargetAnalyticsSerializer
+from ..serializers.target import TargetListSerializer
 from ...pockets.constants import TransactionTypes
 from ...pockets.models import Transaction
 
@@ -32,8 +33,6 @@ class TargetViewSet(viewsets.ModelViewSet):
             serializer_class = TargetCreateSerializer
         elif self.action in ('list', 'retrieve', 'close_target'):
             serializer_class = TargetListSerializer
-        elif self.action == 'get_analytics':
-            serializer_class = TargetAnalyticsSerializer
         else:
             serializer_class = TargetRetrieveSerializer
         return serializer_class
@@ -51,13 +50,6 @@ class TargetViewSet(viewsets.ModelViewSet):
         elif self.action == 'list':
             queryset = queryset.annotate_with_transaction_sums().annotate_deadline()
         return queryset
-
-    def get_object(self):
-        if self.action == 'get_analytics':
-            obj = self.get_queryset().aggregate_analytics()
-        else:
-            obj = super().get_object()
-        return obj
 
     def create(self, request, *args, **kwargs):
         target_serializer = self.get_serializer_class()(
@@ -141,7 +133,8 @@ class TargetViewSet(viewsets.ModelViewSet):
 
     @action(methods=('GET',), detail=False, url_path='analytics')
     def get_analytics(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+        analytics = self._get_analytics(self.get_queryset())
+        return JsonResponse(analytics)
 
     def _create_balance(self, request: Request, *args, **kwargs) -> TargetBalance:
 
@@ -157,3 +150,34 @@ class TargetViewSet(viewsets.ModelViewSet):
         )
 
         return balance
+
+    def _get_analytics(self, queryset, *args, **kwargs):
+        analytics = dict()
+
+        analytics['open_targets_count'] = queryset.filter(is_closed=False).count()
+
+        analytics['open_targets_amount'] = queryset.filter(
+            is_closed=False
+        ).aggregate_total()['total']
+
+        analytics['fastest_finish'] = queryset.filter(
+            is_closed=False
+        ).annotate_finish_days().first().finish_days.days
+
+        analytics['percents_sum'] = queryset.filter(
+            balances__is_percent=True
+        ).aggregate_total()['total']
+
+        analytics['category_top'] = queryset.get_top_category_name_or_none()
+
+        analytics['category_closed_top'] = queryset.filter(
+            is_closed=True
+        ).get_top_category_name_or_none()
+
+        analytics['percents_sum_current_month'] = queryset.filter(
+            balances__is_percent=True,
+            balances__transaction_date__year=date.today().year,
+            balances__transaction_date__month=date.today().month,
+        ).aggregate_total()['total']
+
+        return analytics

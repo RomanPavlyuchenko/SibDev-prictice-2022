@@ -96,29 +96,3 @@ class TargetCreateSerializer(serializers.ModelSerializer):
                 setattr(instance, attr, value)
         instance.save()
         return instance
-
-
-class TargetAnalyticsSerializer(serializers.Serializer):
-    open_targets_count = serializers.IntegerField()
-    open_targets_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-    percents_sum = serializers.DecimalField(max_digits=10, decimal_places=2)
-    percents_sum_current_month = serializers.DecimalField(max_digits=10, decimal_places=2)
-    fastest_finish = serializers.IntegerField()
-    category_top = serializers.IntegerField(required=False)
-    category_closed_top = serializers.IntegerField(required=False)
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        queryset = TransactionCategory.objects.all()
-
-        data.update(
-            {
-                'category_top': TransactionCategorySerializer(
-                    queryset.get(pk=instance['category_top'])
-                ).data if instance['category_top'] else None,
-                'category_closed_top': TransactionCategorySerializer(
-                    queryset.get(pk=instance['category_closed_top'])
-                ).data if instance['category_closed_top'] else None,
-            }
-        )
-        return data

@@ -41,39 +41,16 @@ class TargetQuerySet(QuerySet):
             )
         )
 
-    def aggregate_analytics(self, *args, **kwargs):
-        analytics = dict()
-        queryset_open_targets = self.filter(is_closed=False)
-        queryset_percent = self.filter(balances__is_percent=True)
-        category_top = self.values('category').annotate(
+    def annotate_finish_days(self, *args, **kwargs):
+        return self.annotate_deadline().annotate(
+            finish_days=ExpressionWrapper(
+                (F('deadline') - datetime.now().date()),
+                output_field=models.DurationField(),
+            )
+        ).order_by('finish_days')
+
+    def get_top_category_name_or_none(self, *args, **kwargs):
+        top_category = self.values('category', 'category__name').annotate(
             count=Count('category')
         ).order_by('-count').first()
-        category_closed_top = self.filter(is_closed=True).values('category').annotate(
-            count=Count('category')
-        ).order_by('-count').first()
-
-        analytics.update(
-            {
-                'open_targets_count': queryset_open_targets.count(),
-                'open_targets_amount': queryset_open_targets.aggregate_total()['total'],
-                'fastest_finish': (
-                        self.annotate_deadline(self).order_by('deadline').first().deadline - datetime.now().date()
-                ).days,
-                'percents_sum': queryset_percent.aggregate_total()['total'],
-                'category_top': None if category_top is None else category_top['category'],
-                'category_closed_top': None if category_closed_top is None else category_closed_top['category'],
-
-            }
-        )
-        queryset_percent = self.filter(
-            balances__is_percent=True,
-            balances__transaction_date__year=datetime.now().year,
-            balances__transaction_date__month=datetime.now().month,
-        )
-        analytics.update(
-            {
-                'percents_sum_current_month': queryset_percent.aggregate_total()['total']
-            }
-        )
-
-        return analytics
+        return None if top_category is None else top_category['category__name']

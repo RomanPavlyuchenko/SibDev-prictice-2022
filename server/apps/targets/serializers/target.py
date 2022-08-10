@@ -5,7 +5,8 @@ from rest_framework import serializers
 
 from ..constants import TargetErrors
 from ..models import Target
-from ...pockets.models import Transaction
+from ...pockets.models import Transaction, TransactionCategory
+from ...pockets.serializers import TransactionCategorySerializer
 
 
 class TargetListSerializer(serializers.ModelSerializer):

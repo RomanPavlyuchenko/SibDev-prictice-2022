@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
@@ -61,7 +60,16 @@ class TargetViewSet(viewsets.ModelViewSet):
         target = target_serializer.save()
 
         if 'initial_payment' in request.data:
-            target.balances.add(self._create_balance(request, target_id=target.id, *args, **kwargs))
+            balance = TargetBalance.objects.create(
+                category_id=request.data.get('category', None),
+                user=request.user,
+                target_id=target.id,
+                amount=request.data.get('initial_payment', None),
+                *args,
+                **kwargs
+            )
+
+            target.balances.add(balance)
             target.save()
 
         headers = self.get_success_headers(target_serializer.data)
@@ -133,51 +141,5 @@ class TargetViewSet(viewsets.ModelViewSet):
 
     @action(methods=('GET',), detail=False, url_path='analytics')
     def get_analytics(self, request, *args, **kwargs):
-        analytics = self._get_analytics(self.get_queryset())
+        analytics = self.get_queryset().get_analytics()
         return JsonResponse(analytics)
-
-    def _create_balance(self, request: Request, *args, **kwargs) -> TargetBalance:
-
-        Transaction.objects.create(
-            category_id=request.data.get('category', None),
-            user=request.user,
-            transaction_type=TransactionTypes.EXPENSE,
-            amount=request.data.get('initial_payment', None),
-        )
-        balance = TargetBalance.objects.create(
-            target_id=kwargs.get('target_id'),
-            amount=request.data.get('initial_payment', None),
-        )
-
-        return balance
-
-    def _get_analytics(self, queryset, *args, **kwargs):
-        analytics = dict()
-
-        analytics['open_targets_count'] = queryset.filter(is_closed=False).count()
-
-        analytics['open_targets_amount'] = queryset.filter(
-            is_closed=False
-        ).aggregate_total()['total']
-
-        analytics['fastest_finish'] = queryset.filter(
-            is_closed=False
-        ).annotate_finish_days().first().finish_days.days
-
-        analytics['percents_sum'] = queryset.filter(
-            balances__is_percent=True
-        ).aggregate_total()['total']
-
-        analytics['category_top'] = queryset.get_top_category_name_or_none()
-
-        analytics['category_closed_top'] = queryset.filter(
-            is_closed=True
-        ).get_top_category_name_or_none()
-
-        analytics['percents_sum_current_month'] = queryset.filter(
-            balances__is_percent=True,
-            balances__transaction_date__year=date.today().year,
-            balances__transaction_date__month=date.today().month,
-        ).aggregate_total()['total']
-
-        return analytics
